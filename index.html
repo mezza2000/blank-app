@@ -1,38 +1,12 @@
 <!DOCTYPE html>
-<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1220"><title>RostaTravel</title></head>
-<body style="margin:0;background:#0b1220;color:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"><div id="loading" style="padding:24px">Apro RostaTravel…</div>
-<script>
-(async()=>{
- const BASE='https://rosta-travel-mj2qoaim8-mezza2000s-projects.vercel.app';
- let raw='';
- try{
-   const r=await fetch(BASE+'/app-v9.html?stable=1',{cache:'no-store'});
-   if(!r.ok)throw new Error('HTTP '+r.status);
-   raw=await r.text();
-   let h=raw;
-   h=h.replace('API=location.origin',"API='"+BASE+"'");
-   h=h.replace('SFM3 • live, orari e scioperi','SFM3 • live, orari, biglietti e scioperi');
-   h=h.replace('RostaTravel v9','RostaTravel v11');
-   const css=`.ticketbox{margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}.ticketbtn{width:100%;border:0;background:#f4d354;color:#181300;border-radius:14px;min-height:48px;padding:0 14px;font-weight:900;font-size:16px}.buy-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:9999;padding:14px}.buy-sheet{width:min(100%,600px);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px}.buy-sheet h2{margin:0 0 6px;font-size:20px}.buy-summary{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px;margin:13px 0;font-weight:800}.buy-sheet input{width:100%;height:50px;border-radius:13px;border:1px solid var(--line);background:var(--bg);color:var(--text);padding:0 12px;margin-top:6px;font:inherit}.buy-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:14px}.buy-go{background:#f4d354!important;border-color:#f4d354!important;color:#181300!important}@media(max-width:430px){.buy-actions{grid-template-columns:1fr}}`;
-   if(!h.includes('</style>'))throw new Error('style marker');
-   h=h.replace('</style>',css+'</style>');
-   const ticket=(slot)=>`<div class="ticketbox"><button class="ticketbtn" onclick="rtOpenBuy('${slot}')">🎟 Compra biglietto</button></div>`;
-   const a='<div id="andataMeta" class="small"></div>';
-   const b='<div id="ritornoMeta" class="small"></div>';
-   if(!h.includes(a)||!h.includes(b))throw new Error('card markers');
-   h=h.replace(a,a+ticket('andata')).replace(b,b+ticket('ritorno'));
-   const modal=`<div id="rtBuyModal" class="buy-modal hidden" role="dialog" aria-modal="true"><div class="buy-sheet"><h2>🎟 Compra biglietto</h2><div class="small">Per quale giorno vuoi acquistarlo?</div><div id="rtBuySummary" class="buy-summary"></div><label class="small" for="rtBuyDate">Giorno del viaggio</label><input id="rtBuyDate" type="date"><div class="buy-actions"><button class="btn" onclick="rtCloseBuy()">Annulla</button><button class="btn buy-go" onclick="rtContinueBuy()">Apri Trenitalia</button></div><div class="small" style="margin-top:10px">Passo automaticamente a Trenitalia partenza, arrivo, giorno e ora di ricerca. L'orario esatto del treno fissato resta visibile qui per scegliere subito la corsa corretta.</div></div></div>`;
-   if(!h.includes('</main>'))throw new Error('main marker');
-   h=h.replace('</main>','</main>'+modal);
-   const js=`\nlet rtBuySlot=null;\nfunction rtToday(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),o={};for(const x of p)if(x.type!=='literal')o[x.type]=x.value;return o.year+'-'+o.month+'-'+o.day}\nfunction rtAddDay(iso){const a=iso.split('-').map(Number),d=new Date(Date.UTC(a[0],a[1]-1,a[2]+1,12));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}\nfunction rtSuggested(time){const n=now(),nm=n.hour*60+n.minute;return min(time)>=nm-5?rtToday():rtAddDay(rtToday())}\nfunction rtOpenBuy(slot){rtBuySlot=slot;const p=getPinned(slot),f=stationMap[p.from]?.label||p.from,t=stationMap[p.to]?.label||p.to;document.getElementById('rtBuySummary').textContent=f+' → '+t+' · treno fissato '+p.departure;const i=document.getElementById('rtBuyDate');i.min=rtToday();i.value=rtSuggested(p.departure);document.getElementById('rtBuyModal').classList.remove('hidden');try{tg?.HapticFeedback?.impactOccurred('light')}catch(_){}}\nfunction rtCloseBuy(){document.getElementById('rtBuyModal').classList.add('hidden');rtBuySlot=null}\nfunction rtDDMM(iso){const a=iso.split('-');return a[2]+'-'+a[1]+'-'+a[0]}\nfunction rtUrl(p,date){const f=stationMap[p.from]?.label||p.from,t=stationMap[p.to]?.label||p.to,q=new URLSearchParams({noOfAdults:'1',ynFlexibleDates:'off',arrivalStation:t,selectedTrainClassification:'',tripType:'on',selectedTrainType:'tutti',departureStation:f,parameter:'initBaseSearch',departureTime:String(p.departure).slice(0,2),departureDate:rtDDMM(date),noOfChildren:'0'});return 'https://www.lefrecce.it/?lang=it#search?'+q.toString()}\nfunction rtContinueBuy(){if(!rtBuySlot)return;const date=document.getElementById('rtBuyDate').value;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return;const p=getPinned(rtBuySlot),url=rtUrl(p,date);rtCloseBuy();try{tg?.HapticFeedback?.notificationOccurred('success')}catch(_){}if(tg?.openLink)tg.openLink(url,{try_instant_view:false});else location.href=url}\ndocument.getElementById('rtBuyModal')?.addEventListener('click',e=>{if(e.target?.id==='rtBuyModal')rtCloseBuy()});\n`;
-   const pos=h.lastIndexOf('</script>');
-   if(pos<0)throw new Error('script marker');
-   h=h.slice(0,pos)+js+h.slice(pos);
-   document.open();document.write(h);document.close();
- }catch(e){
-   console.error('RostaTravel v11 fallback',e);
-   if(raw){document.open();document.write(raw.replace('API=location.origin',"API='"+BASE+"'"));document.close()}
-   else document.getElementById('loading').innerHTML='<b>RostaTravel temporaneamente non disponibile.</b><br>Riprova tra poco.';
- }
-})();
-</script></body></html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>RostaTravel</title>
+  <meta http-equiv="refresh" content="0;url=/app-v9.html">
+  <script>location.replace('/app-v9.html');</script>
+</head>
+<body style="margin:0;background:#0b1220;color:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:24px">Apro RostaTravel…</body>
+</html>
