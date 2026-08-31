@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Rosta ↔ Torino Live</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      --bg:#0b1220;--card:#121b2d;--card2:#17233a;--text:#f6f8fb;--muted:#9eabc0;
+      --line:#26334d;--accent:#4da3ff;--ok:#33d17a;--warn:#ffb454;--danger:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+    .app{max-width:720px;margin:0 auto;padding:16px 14px 28px}
+    .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .hero h1{font-size:24px;line-height:1.05;margin:0}.hero p{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+    button{font:inherit}.tab,.refresh{border:1px solid var(--line);background:var(--card);color:var(--text);min-height:46px;border-radius:14px;padding:0 14px;font-weight:700}
+    .tab.active{background:var(--accent);border-color:var(--accent);color:#06111d}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+    .eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.row>div{min-width:0}
+    .title{font-size:18px;font-weight:800}.timepill{padding:7px 10px;border-radius:999px;background:var(--card2);font-weight:800;white-space:nowrap}
+    .route{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;margin-top:18px}
+    .station{text-align:center}.station .t{font-size:26px;font-weight:900}.station .s{font-size:11px;color:var(--muted);margin-top:3px}
+    .track{min-width:0;text-align:center}.line{height:4px;background:var(--line);border-radius:999px;margin-bottom:8px}.status{font-weight:800;font-size:14px}.delay{font-size:12px;color:var(--muted);margin-top:3px}
+    .status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.danger{color:var(--danger)}
+    .metrobox{margin-top:14px;background:var(--card2);border-radius:16px;padding:13px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .label{font-size:12px;color:var(--muted)}.big{font-size:30px;font-weight:900;line-height:1}.value{font-size:18px;font-weight:800;margin-top:4px}
+    .right{text-align:right}.hidden{display:none}
+    .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}.updated{font-size:12px;color:var(--muted)}
+    .refresh{background:var(--accent);border-color:var(--accent);color:#06111d;min-width:112px}
+    .note{font-size:12px;line-height:1.45;color:var(--muted);margin-top:12px}
+    @media(max-width:380px){.station .t{font-size:22px}.title{font-size:16px}.big{font-size:26px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="hero">
+      <div>
+        <h1>Rosta ↔ Torino</h1>
+        <p>Treno + Metro • aggiornamento rapido</p>
+      </div>
+      <div id="clock" class="timepill">--:--</div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Percorso">
+      <button class="tab active" id="andataTab" type="button">☀️ Andata</button>
+      <button class="tab" id="ritornoTab" type="button">🌙 Ritorno</button>
+    </div>
+
+    <section id="andataPanel">
+      <div class="card">
+        <div class="row">
+          <div><div class="eyebrow">SFM3 · ANDATA</div><div class="title">Rosta → Porta Nuova</div></div>
+          <div class="timepill">07:50</div>
+        </div>
+        <div class="route">
+          <div class="station"><div class="t">07:50</div><div class="s">ROSTA</div></div>
+          <div class="track"><div class="line"></div><div id="andataTrainStatus" class="status ok">In orario</div><div id="andataTrainDelay" class="delay">Ritardo: 0 min</div></div>
+          <div class="station"><div class="t">08:15</div><div class="s">P. NUOVA</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div><div class="eyebrow">METRO M1 · direzione Fermi</div><div class="title">Porta Nuova → Marche</div></div>
+          <div class="right"><div class="label">Prossima metro</div><div id="andataMetroCountdown" class="big">-- min</div></div>
+        </div>
+        <div class="metrobox">
+          <div><div class="label">Prossima</div><div id="andataMetroTime" class="value">--:--</div></div>
+          <div class="right"><div class="label">Successiva</div><div id="andataMetroNext" class="value">--:--</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ritornoPanel" class="hidden">
+      <div class="card">
+        <div class="row">
+          <div><div class="eyebrow">USCITA LAVORO</div><div class="title">Armonia dei Sensi → Marche</div></div>
+          <div class="timepill">17:00</div>
+        </div>
+        <div class="note">Raggiungi a piedi la fermata Metro Marche.</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div><div class="eyebrow">METRO M1 · direzione Bengasi</div><div class="title">Marche → Porta Nuova</div></div>
+          <div class="right"><div class="label">Prossima metro</div><div id="ritornoMetroCountdown" class="big">-- min</div></div>
+        </div>
+        <div class="metrobox">
+          <div><div class="label">Prossima</div><div id="ritornoMetroTime" class="value">--:--</div></div>
+          <div class="right"><div class="label">Successiva</div><div id="ritornoMetroNext" class="value">--:--</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div><div class="eyebrow">SFM3 · RITORNO</div><div class="title">Porta Nuova → Rosta</div></div>
+          <div class="timepill">17:45</div>
+        </div>
+        <div class="route">
+          <div class="station"><div class="t">17:45</div><div class="s">P. NUOVA</div></div>
+          <div class="track"><div class="line"></div><div id="ritornoTrainStatus" class="status ok">In orario</div><div id="ritornoTrainDelay" class="delay">Ritardo: 0 min</div></div>
+          <div class="station"><div class="t">18:08</div><div class="s">ROSTA</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="foot">
+      <div id="updated" class="updated" aria-live="polite">Aggiornamento…</div>
+      <button id="refreshBtn" class="refresh" type="button">↻ Aggiorna</button>
+    </div>
+    <div id="dataNote" class="note">La Mini App è pronta per Telegram. Finché non viene collegato un backend live, usa orari programmati e dati demo per il ritardo.</div>
+  </main>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      try { tg.setHeaderColor('#0b1220'); tg.setBackgroundColor('#0b1220'); } catch (_) {}
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const andataTab = $('andataTab');
+    const ritornoTab = $('ritornoTab');
+    const andataPanel = $('andataPanel');
+    const ritornoPanel = $('ritornoPanel');
+
+    function setTab(mode){
+      const andata = mode === 'andata';
+      andataTab.classList.toggle('active', andata);
+      ritornoTab.classList.toggle('active', !andata);
+      andataPanel.classList.toggle('hidden', !andata);
+      ritornoPanel.classList.toggle('hidden', andata);
+      tg?.HapticFeedback?.selectionChanged();
+    }
+    andataTab.addEventListener('click',()=>setTab('andata'));
+    ritornoTab.addEventListener('click',()=>setTab('ritorno'));
+
+    const pad = n => String(n).padStart(2,'0');
+    function romeNow(){
+      const parts = new Intl.DateTimeFormat('it-IT',{timeZone:'Europe/Rome',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).formatToParts(new Date());
+      const o={}; for(const p of parts){ if(p.type!=='literal') o[p.type]=Number(p.value); } return o;
+    }
+    function metroEstimate(){
+      const t=romeNow(); const interval=300; const elapsed=t.minute*60+t.second; let rem=interval-(elapsed%interval); if(rem===interval) rem=0;
+      const mins=Math.max(1,Math.ceil(rem/60)); const first=t.hour*60+t.minute+Math.ceil(rem/60); const second=first+5;
+      return {mins,first:`${pad(Math.floor(first/60)%24)}:${pad(first%60)}`,second:`${pad(Math.floor(second/60)%24)}:${pad(second%60)}`};
+    }
+    function paintMetro(prefix){
+      const m=metroEstimate(); $(`${prefix}MetroCountdown`).textContent=`${m.mins} min`; $(`${prefix}MetroTime`).textContent=m.first; $(`${prefix}MetroNext`).textContent=m.second;
+    }
+    function updateClock(){ const t=romeNow(); $('clock').textContent=`${pad(t.hour)}:${pad(t.minute)}`; }
+
+    // Imposta qui in futuro il backend live, es: https://tuo-backend.example.com
+    const API_BASE = '';
+
+    async function loadLiveData(){
+      paintMetro('andata'); paintMetro('ritorno'); updateClock();
+      const t=romeNow(); $('updated').textContent=`Aggiornato alle ${pad(t.hour)}:${pad(t.minute)}:${pad(t.second)}`;
+      if(!API_BASE) return;
+      try{
+        const r=await fetch(`${API_BASE}/api/status`,{cache:'no-store'}); if(!r.ok) throw new Error('API non disponibile');
+        const data=await r.json();
+        applyTrain('andata',data.andata); applyTrain('ritorno',data.ritorno);
+        if(data.metro?.andata){$('andataMetroCountdown').textContent=data.metro.andata.countdown;$('andataMetroTime').textContent=data.metro.andata.next;$('andataMetroNext').textContent=data.metro.andata.following;}
+        if(data.metro?.ritorno){$('ritornoMetroCountdown').textContent=data.metro.ritorno.countdown;$('ritornoMetroTime').textContent=data.metro.ritorno.next;$('ritornoMetroNext').textContent=data.metro.ritorno.following;}
+        $('dataNote').textContent='Dati aggiornati dal backend live.';
+      }catch(e){ $('dataNote').textContent='Backend live non raggiungibile: mostro temporaneamente gli orari programmati.'; }
+    }
+    function applyTrain(prefix,train){
+      if(!train) return; const s=$(`${prefix}TrainStatus`),d=$(`${prefix}TrainDelay`); const delay=Number(train.delay||0);
+      s.className='status '+(train.cancelled?'danger':delay>5?'warn':'ok');
+      s.textContent=train.cancelled?'Cancellato':delay>0?`+${delay} min`:'In orario';
+      d.textContent=train.cancelled?'Corsa cancellata':`Ritardo: ${delay} min`;
+    }
+    $('refreshBtn').addEventListener('click',()=>{ tg?.HapticFeedback?.impactOccurred('light'); loadLiveData(); });
+    loadLiveData(); setInterval(()=>{paintMetro('andata');paintMetro('ritorno');updateClock();},1000);
+  </script>
+</body>
+</html>
