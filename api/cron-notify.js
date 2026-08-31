@@ -59,7 +59,7 @@ async function checkTrain(token, chatId, direction, time, nowMinutes) {
   if (!(data.cancelled || data.changed || Number(data.delay || 0) >= threshold)) return alerts;
 
   const route = direction === 'andata' ? 'Rosta → Porta Nuova' : 'Porta Nuova → Rosta';
-  let state = data.cancelled ? '❌ CANCELLATO' : data.changed ? '⚠️ CORSA MODIFICATA' : `⏱ Ritardo +${data.delay} min`;
+  const state = data.cancelled ? '❌ CANCELLATO' : data.changed ? '⚠️ CORSA MODIFICATA' : `⏱ Ritardo +${data.delay} min`;
   const details = [data.trainNumber ? `Treno ${data.trainNumber}` : null, data.platform ? `Binario ${data.platform}` : null].filter(Boolean).join(' • ');
   const text = `🚆 RostaTravel\n${route} · ${time}\n${state}${details ? `\n${details}` : ''}`;
   await send(token, chatId, text);
@@ -80,6 +80,10 @@ async function checkStrikes(token, chatId, hour, minute) {
 }
 
 module.exports = async function handler(req, res) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return res.status(200).json({ ok: true, configured: false, message: 'Token Telegram non configurato' });
   try {
