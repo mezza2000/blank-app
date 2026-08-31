@@ -1,0 +1,26 @@
+name: Keep RostaTravel Active
+
+on:
+  schedule:
+    - cron: '17 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update keep-alive marker
+        run: |
+          mkdir -p .github
+          echo "Last keep-alive: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" > .github/rosta-keepalive.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/rosta-keepalive.txt
+          git commit -m "chore: keep RostaTravel workflows active" || exit 0
+          git push
