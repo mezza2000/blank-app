@@ -1,10 +1,4 @@
 {
   "version": 2,
-  "cleanUrls": false,
-  "crons": [
-    {
-      "path": "/api/cron-notify",
-      "schedule": "*/5 * * * *"
-    }
-  ]
+  "cleanUrls": false
 }
