@@ -11,6 +11,7 @@ const STATIONS = {
   'borgone': { id: 662, label: 'Borgone', aliases: ['BORGONE'] },
   'bruzolo-di-susa': { id: 699, label: 'Bruzolo di Susa', aliases: ['BRUZOLO DI SUSA', 'BRUZOLO SUSA'] },
   'bussoleno': { id: 711, label: 'Bussoleno', aliases: ['BUSSOLENO'] },
+  'susa': { id: 2602, label: 'Susa', aliases: ['SUSA'] },
   'meana': { id: 1923, label: 'Meana', aliases: ['MEANA'] },
   'chiomonte': { id: 1018, label: 'Chiomonte', aliases: ['CHIOMONTE'] },
   'salbertrand': { id: 2431, label: 'Salbertrand', aliases: ['SALBERTRAND'] },
@@ -76,10 +77,7 @@ function matchesStation(name, station) {
 function parseStopLinks(raw = '') {
   const result = [];
   for (const match of String(raw).matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>\s*\((\d{2})[.:](\d{2})\)/gi)) {
-    result.push({
-      name: clean(match[1]),
-      time: `${match[2]}:${match[3]}`
-    });
+    result.push({ name: clean(match[1]), time: `${match[2]}:${match[3]}` });
   }
   return result;
 }
@@ -87,89 +85,45 @@ function parseStopLinks(raw = '') {
 function parseTerminal(raw = '') {
   const text = clean(raw);
   const match = text.match(/(.+?)\s*\((\d{2})[.:](\d{2})\)\s*$/);
-  return match
-    ? { name: match[1].trim(), time: `${match[2]}:${match[3]}` }
-    : { name: text, time: null };
+  return match ? { name: match[1].trim(), time: `${match[2]}:${match[3]}` } : { name: text, time: null };
 }
 
 function parseTrips(html, from, to) {
   const trips = [];
-
   for (const rowMatch of String(html).matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const row = rowMatch[1];
     if (!/Treno\s+SFM\s+Linea\s+3/i.test(row)) continue;
-
     const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(match => match[1]);
     if (cells.length < 8) continue;
-
     const departure = timeValue(clean(cells[0]));
     const trainNumber = (clean(cells[1]).match(/\b(\d{4,5})\b/) || [])[1];
     const terminal = parseTerminal(cells[2]);
     const platform = clean(cells[3]) || null;
-
     if (!departure || !trainNumber || !terminal.time) continue;
-
-    const stops = [
-      { name: from.label, time: departure },
-      ...parseStopLinks(cells[7]),
-      terminal
-    ];
-
+    const stops = [{ name: from.label, time: departure }, ...parseStopLinks(cells[7]), terminal];
     const destinationIndex = stops.findIndex((stop, index) => index > 0 && matchesStation(stop.name, to));
     if (destinationIndex < 0) continue;
-
     const arrival = stops[destinationIndex].time;
     if (!arrival) continue;
-
-    trips.push({
-      trainNumber: Number(trainNumber),
-      departure,
-      arrival,
-      duration: durationMinutes(departure, arrival),
-      platform,
-      terminal: terminal.name,
-      scheduled: true
-    });
+    trips.push({ trainNumber: Number(trainNumber), departure, arrival, duration: durationMinutes(departure, arrival), platform, terminal: terminal.name, scheduled: true });
   }
-
   const unique = new Map();
   for (const trip of trips) {
     const key = `${trip.trainNumber}|${trip.departure}|${trip.arrival}|${norm(trip.terminal)}`;
     if (!unique.has(key)) unique.set(key, trip);
   }
-
-  return [...unique.values()].sort((a, b) =>
-    a.departure.localeCompare(b.departure) || a.arrival.localeCompare(b.arrival) || a.trainNumber - b.trainNumber
-  );
+  return [...unique.values()].sort((a, b) => a.departure.localeCompare(b.departure) || a.arrival.localeCompare(b.arrival) || a.trainNumber - b.trainNumber);
 }
 
 function groupAlternatives(trips) {
   const groups = new Map();
-
   for (const trip of trips) {
     const key = `${trip.departure}|${trip.arrival}|${norm(trip.terminal)}|${trip.platform || ''}`;
-    if (!groups.has(key)) {
-      groups.set(key, {
-        departure: trip.departure,
-        arrival: trip.arrival,
-        duration: trip.duration,
-        platform: trip.platform,
-        terminal: trip.terminal,
-        trainNumbers: []
-      });
-    }
+    if (!groups.has(key)) groups.set(key, { departure: trip.departure, arrival: trip.arrival, duration: trip.duration, platform: trip.platform, terminal: trip.terminal, trainNumbers: [] });
     const group = groups.get(key);
     if (!group.trainNumbers.includes(trip.trainNumber)) group.trainNumbers.push(trip.trainNumber);
   }
-
-  return [...groups.values()]
-    .map(group => ({
-      ...group,
-      trainNumbers: group.trainNumbers.sort((a, b) => a - b),
-      trainNumber: group.trainNumbers.length === 1 ? group.trainNumbers[0] : null,
-      scheduled: true
-    }))
-    .sort((a, b) => a.departure.localeCompare(b.departure) || a.arrival.localeCompare(b.arrival));
+  return [...groups.values()].map(group => ({ ...group, trainNumbers: group.trainNumbers.sort((a, b) => a - b), trainNumber: group.trainNumbers.length === 1 ? group.trainNumbers[0] : null, scheduled: true })).sort((a, b) => a.departure.localeCompare(b.departure) || a.arrival.localeCompare(b.arrival));
 }
 
 module.exports = async function handler(req, res) {
@@ -178,30 +132,20 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   if (req.method === 'OPTIONS') return res.status(204).end();
-
-  const from = STATIONS[String(req.query.from || '')];
-  const to = STATIONS[String(req.query.to || '')];
-  if (!from || !to || from === to) {
-    return res.status(400).json({ ok: false, error: 'Scegli due stazioni diverse' });
-  }
-
+  const fromKey = String(req.query.from || '');
+  const toKey = String(req.query.to || '');
+  const from = STATIONS[fromKey];
+  const to = STATIONS[toKey];
+  if (!from || !to || from === to) return res.status(400).json({ ok: false, error: 'Scegli due stazioni diverse' });
   const url = `https://prm.rfi.it/qo_prm/QO_Partenze_SiPMR.aspx?Id=${from.id}&dalle=00.00&alle=23.59&lin=it&ora=00.00`;
-
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 RostaTravel/1.0',
-        'Accept': 'text/html,*/*'
-      },
-      cache: 'no-store'
-    });
+    const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 RostaTravel/1.0', 'Accept': 'text/html,*/*' }, cache: 'no-store' });
     if (!response.ok) throw new Error(`RFI HTTP ${response.status}`);
-
     const html = await response.text();
     const pageText = clean(html);
     const periodMatch = pageText.match(/ORARIO PROGRAMMATO\s+(\d{1,2}\s+\S+\s+\d{4})\s*-\s*(\d{1,2}\s+\S+\s+\d{4})/i);
     const trips = groupAlternatives(parseTrips(html, from, to));
-
+    const crossBranch = (fromKey === 'susa' && ['meana','chiomonte','salbertrand','oulx','beaulard','bardonecchia'].includes(toKey)) || (toKey === 'susa' && ['meana','chiomonte','salbertrand','oulx','beaulard','bardonecchia'].includes(fromKey));
     return res.status(200).json({
       ok: true,
       from: { label: from.label },
@@ -209,14 +153,11 @@ module.exports = async function handler(req, res) {
       period: periodMatch ? `${periodMatch[1]} – ${periodMatch[2]}` : null,
       checkedAt: new Date().toISOString(),
       source: 'RFI - Quadro Orario Programmato',
-      note: 'Sono mostrate tutte le corse programmate nel periodo RFI corrente. Più numeri di treno allo stesso orario indicano varianti valide in giorni diversi.',
+      note: crossBranch ? 'Tra il ramo Susa e il ramo Bardonecchia non ci sono corse dirette: è necessario cambiare a Bussoleno.' : 'Sono mostrate tutte le corse programmate nel periodo RFI corrente. Più numeri di treno allo stesso orario indicano varianti valide in giorni diversi.',
+      requiresChangeAtBussoleno: crossBranch,
       trips
     });
   } catch (error) {
-    return res.status(502).json({
-      ok: false,
-      error: 'Orario programmato RFI temporaneamente non disponibile',
-      detail: String(error?.message || error)
-    });
+    return res.status(502).json({ ok: false, error: 'Orario programmato RFI temporaneamente non disponibile', detail: String(error?.message || error) });
   }
 };
