@@ -1,0 +1,16 @@
+name: RostaTravel Bot Info Temp
+on:
+  push:
+    paths:
+      - '.github/workflows/bot-info-temp.yml'
+permissions:
+  contents: read
+jobs:
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get bot username
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          node -e "fetch('https://api.telegram.org/bot'+process.env.TELEGRAM_BOT_TOKEN+'/getMe').then(r=>r.json()).then(d=>{if(!d.ok)throw new Error(d.description||'getMe failed'); console.log('BOT_USERNAME='+d.result.username)}).catch(e=>{console.error(e.message);process.exit(1)})"
