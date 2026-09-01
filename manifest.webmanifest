@@ -1,12 +1,12 @@
 {
-  "name": "RostaTravel",
-  "short_name": "RostaTravel",
+  "name": "BinarioForse",
+  "short_name": "BinarioForse",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
-  "description": "Orari, stato live e avvisi SFM3",
+  "background_color": "#08090b",
+  "theme_color": "#08090b",
+  "description": "Treni, ritardi e orari della Val di Susa",
   "icons": [
     {
       "src": "/icon.svg",
