@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: '🔔 RostaTravel: notifiche collegate correttamente. Ti avviserò per ritardi importanti, cancellazioni e scioperi rilevanti.',
+        text: '🔔 BinarioForse: notifiche collegate correttamente. Ti avviserò per ritardi importanti, cancellazioni e scioperi rilevanti.',
         disable_web_page_preview: true
       })
     });
