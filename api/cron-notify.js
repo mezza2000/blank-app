@@ -61,7 +61,7 @@ async function checkTrain(token, chatId, direction, time, nowMinutes) {
   const route = direction === 'andata' ? 'Rosta → Porta Nuova' : 'Porta Nuova → Rosta';
   const state = data.cancelled ? '❌ CANCELLATO' : data.changed ? '⚠️ CORSA MODIFICATA' : `⏱ Ritardo +${data.delay} min`;
   const details = [data.trainNumber ? `Treno ${data.trainNumber}` : null, data.platform ? `Binario ${data.platform}` : null].filter(Boolean).join(' • ');
-  const text = `🚆 RostaTravel\n${route} · ${time}\n${state}${details ? `\n${details}` : ''}`;
+  const text = `🚆 BinarioForse\n${route} · ${time}\n${state}${details ? `\n${details}` : ''}`;
   await send(token, chatId, text);
   alerts.push({ type: 'train', direction, time });
   return alerts;
@@ -74,7 +74,7 @@ async function checkStrikes(token, chatId, hour, minute) {
   const relevant = data.strikes.filter(s => [7,3,1,0].includes(dateDiffDays(s.startISO)));
   if (!relevant.length) return [];
   const lines = relevant.slice(0,4).map(s => `• ${s.start}${s.end && s.end !== s.start ? `–${s.end}` : ''}: ${s.mode || s.sector}`);
-  const text = `⚠️ RostaTravel — Scioperi rilevanti\n${lines.join('\n')}\n\n🛡️ Fasce Regionali: feriali 06:00–09:00 e 18:00–21:00; festivi 07:00–10:00 e 18:00–21:00.`;
+  const text = `⚠️ BinarioForse — Scioperi rilevanti\n${lines.join('\n')}\n\n🛡️ Fasce Regionali: feriali 06:00–09:00 e 18:00–21:00; festivi 07:00–10:00 e 18:00–21:00.`;
   await send(token, chatId, text);
   return [{ type: 'strikes', count: relevant.length }];
 }
