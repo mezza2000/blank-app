@@ -1,0 +1,34 @@
+name: Add RostaTravel Notification UI
+on:
+  push:
+    paths:
+      - 'scripts/add-notification-ui.mjs'
+      - 'scripts/finish-notification-ui.mjs'
+      - '.github/workflows/add-notification-ui.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch stable v9
+        run: |
+          node scripts/add-notification-ui.mjs
+          node scripts/finish-notification-ui.mjs
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('app-v9.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.trim());
+          for(const code of scripts)new Function(code);
+          if(!html.includes('id="notificationsCard"'))throw new Error('Notification card missing');
+          if(!html.includes('RostaTravel v9'))throw new Error('Stable v9 marker missing');
+          console.log('Syntax OK');
+          NODE
+      - name: Commit patched v9
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-v9.html
+          git commit -m 'Add notification controls to stable v9 [skip ci]' || exit 0
+          git push
