@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://rosta-travel.vercel.app/sitemap.xml
+Sitemap: https://binarioforse.com/sitemap.xml
