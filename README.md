@@ -1,19 +1,10 @@
-# 🎈 Blank app template
+# BinarioForse
 
-A simple Streamlit app template for you to modify!
+Pagina indipendente e non ufficiale dedicata alla linea SFM3 della Val di Susa.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+La versione pubblica funziona in modalità prudente:
 
-### How to run it on your own machine
-
-1. Install the requirements
-
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+- non raccoglie statistiche o identificativi;
+- non ripubblica dati ferroviari, ritardi, binari o scioperi;
+- non usa bot Telegram, notifiche o API esterne;
+- indirizza l’utente ai canali ufficiali per ogni verifica di viaggio.
